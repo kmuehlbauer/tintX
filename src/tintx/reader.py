@@ -73,6 +73,7 @@ class RunDirectory(Cell_tracks):
         time_coord: str = "time",
         start: Optional[Union[str, datetime, pd.Timestamp]] = None,
         end: Optional[Union[str, datetime, pd.Timestamp]] = None,
+        crs: str = "epsg:4326",
         **kwargs: Any,
     ) -> RunDirectory:
         """
@@ -101,6 +102,8 @@ class RunDirectory(Cell_tracks):
             The name of the latitude vector/array, can be 1D or 2D
         time_coord: str, default: time
             The name of the time variable
+        crs: str (default: epsg:4326)
+            Coordinate Reference System
         kwargs:
             Additional keyword arguments that are passed to open the dataset
             with xarray
@@ -137,6 +140,7 @@ class RunDirectory(Cell_tracks):
             x_coord=x_coord,
             y_coord=y_coord,
             time_coord=time_coord,
+            crs=crs,
             _files=_files,
         )
 
@@ -148,6 +152,7 @@ class RunDirectory(Cell_tracks):
         time_coord: str = "time",
         x_coord: str = "lon",
         y_coord: str = "lat",
+        crs: str = "epsg:4326",
         _files: Union[list[str], str] = "",
     ) -> None:
         if isinstance(dataset, xr.DataArray):
@@ -161,6 +166,7 @@ class RunDirectory(Cell_tracks):
         self.time = self.data[time_coord]
         self.start = convert_to_cftime(self.time.values[0])
         self.end = convert_to_cftime(self.time.values[-1])
+        self.crs = crs
         self._metadata_reader = MetaData(
             self.data,
             self.var_name,
@@ -248,7 +254,12 @@ class RunDirectory(Cell_tracks):
     @property
     def tracks(self) -> pd.DataFrame:
         """Pandas ``DataFrame`` representation of the tracked cells."""
-        return self._tracks
+        import geopandas as gpd  # type: ignore
+        from shapely import geometry  # type: ignore
+
+        tracks = self._tracks.copy()
+        tracks["geometry"] = [geometry.shape(geom) for geom in tracks["geometry"]]
+        return gpd.GeoDataFrame(tracks, crs=self.crs)
 
     def save_tracks(self, output: Union[str, Path]) -> None:
         """Save tracked data to hdf5 table.
