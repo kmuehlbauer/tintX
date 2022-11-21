@@ -8,12 +8,12 @@ from typing import Any, Optional, Union, Iterator
 import warnings
 
 from cartopy.mpl.geoaxes import GeoAxesSubplot
+from cartopy.crs import CRS
 from matplotlib import pyplot as plt
 import pandas as pd
 from tqdm.auto import tqdm
 import xarray as xr
 import geopandas as gpd
-from shapely import geometry
 
 from .helpers import get_grids, convert_to_cftime, MetaData
 from .tracks import Cell_tracks
@@ -259,9 +259,9 @@ class RunDirectory(Cell_tracks):
     @property
     def tracks(self) -> pd.DataFrame:
         """Pandas ``DataFrame`` representation of the tracked cells."""
-        tracks = self._tracks.copy()
-        tracks["geometry"] = [geometry.shape(geom) for geom in tracks["geometry"]]
-        return gpd.GeoDataFrame(tracks, crs=self.crs)
+        #tracks = self._tracks.copy()
+        #tracks["geometry"] = [geometry.shape(geom) for geom in tracks["geometry"]]
+        return gpd.GeoDataFrame(self._tracks.copy(), crs=self.crs)
 
     def save_tracks(self, output: Union[str, Path]) -> None:
         """Save tracked data to hdf5 table.
@@ -300,7 +300,10 @@ class RunDirectory(Cell_tracks):
                 warnings.simplefilter(
                     action="ignore", category=pd.errors.PerformanceWarning
                 )
-                hdf5.put("tintx_tracks", self.tracks)
+                tracks = self._tracks.copy()
+                tracks["geometry"] = self.tracks.geometry.map(str)
+                metadata["crs"] = CRS(self.crs).to_wkt()
+                hdf5.put("tintx_tracks", tracks)
                 self._metadata_reader.save(hdf5)
             table = hdf5.get_storer("tintx_tracks")
             table.attrs.track_meta = metadata
@@ -382,6 +385,7 @@ class RunDirectory(Cell_tracks):
             )
             cls_instance = cls(coord_dataset, var_name, **metadata)
         cls_instance._metadata[cls_instance._track_hash()] = parameters
+
         cls_instance.reset_tracks(tracks)
         return cls_instance
 

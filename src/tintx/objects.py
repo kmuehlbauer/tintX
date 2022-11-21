@@ -11,6 +11,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from rasterio import features, transform
+from shapely import geometry
 from scipy import ndimage
 from .grid_utils import get_filtered_frame
 from .helpers import Counter, Record
@@ -261,11 +262,11 @@ def get_object_prop(
             fwd = transform.Affine.from_gdal(*geotransform)
             # use safe dtype in case of num_cells > 255
             poly.append(
-                next(
+                geometry.shape(next(
                     features.shapes(
                         (image1 == obj).astype("uint16"), transform=fwd
                     )
-                )[0]
+                )[0])
             )
 
             get_items.append(obj - 1)
