@@ -10,7 +10,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-from rasterio import features, transform  # type: ignore
+from rasterio import features, transform
 from scipy import ndimage
 from .grid_utils import get_filtered_frame
 from .helpers import Counter, Record

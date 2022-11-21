@@ -12,6 +12,8 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from tqdm.auto import tqdm
 import xarray as xr
+import geopandas as gpd
+from shapely import geometry
 
 from .helpers import get_grids, convert_to_cftime, MetaData
 from .tracks import Cell_tracks
@@ -257,9 +259,6 @@ class RunDirectory(Cell_tracks):
     @property
     def tracks(self) -> pd.DataFrame:
         """Pandas ``DataFrame`` representation of the tracked cells."""
-        import geopandas as gpd  # type: ignore
-        from shapely import geometry  # type: ignore
-
         tracks = self._tracks.copy()
         tracks["geometry"] = [geometry.shape(geom) for geom in tracks["geometry"]]
         return gpd.GeoDataFrame(tracks, crs=self.crs)
